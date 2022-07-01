@@ -1,4 +1,17 @@
-import { Query, Stable, Update, ic, nat, nat32 } from 'azle';
+import {
+    Async,
+    CanisterResult,
+    Query,
+    Stable,
+    Update,
+    blob,
+    ic,
+    nat,
+    nat32,
+    ok
+} from 'azle';
+import { sha224 } from 'hash.js';
+import { ManagementCanister } from 'azle/canisters/management';
 
 type BlogPost = {
     title: string;
@@ -8,13 +21,13 @@ type BlogPost = {
     last_modified: nat;
 };
 
-let posts: Stable<BlogPost[]> = [];
+let posts: {[key: string]: BlogPost} = {};
 
-export function getBlogPosts(): Query<BlogPost[]> {
+export function get_blog_posts(): Query<{[key: string]: BlogPost}> {
     return posts;
 }
 
-export function listPosts(): Query<string> {
+export function list_posts(): Query<string> {
     return posts
         .map((obj, index) => {
             return `${index} ${obj.title}`;
@@ -22,7 +35,7 @@ export function listPosts(): Query<string> {
         .join('\n');
 }
 
-export function createPost(
+export function create_post(
     title: string,
     author: string,
     post: string
@@ -39,11 +52,11 @@ export function createPost(
     return blogPost;
 }
 
-export function readPost(number: nat32): Query<BlogPost> {
+export function read_post(number: nat32): Query<BlogPost> {
     return posts[number];
 }
 
-export function updatePost(
+export function update_post(
     number: nat32,
     updatedBody: string
 ): Update<BlogPost> {
@@ -61,12 +74,22 @@ export function updatePost(
     return updatedPost;
 }
 
-export function deletePost(number: nat32): Update<void> {
+export function delete_post(number: nat32): Update<void> {
     posts = posts.filter((value: BlogPost, index: number) => {
         return index !== number;
     });
 }
 
-export function getPostCount(): Query<nat32> {
+export function get_post_count(): Query<nat32> {
     return posts.length;
+}
+
+export function* generate_id(): Update<string> {
+    const randomness_canister_result: CanisterResult<blob> =
+        yield ManagementCanister.raw_rand();
+
+    if (!ok(randomness_canister_result)) {
+        return randomness_canister_result.err === undefined ? 'undefined' : randomness_canister_result.err;
+    }
+    return sha224().update(Array.from(randomness_canister_result.ok)).digest('hex');
 }
