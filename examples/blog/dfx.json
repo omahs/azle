@@ -1,0 +1,15 @@
+{
+    "canisters": {
+        "blog": {
+            "type": "custom",
+            "build": "npx azle blog",
+            "root": "src",
+            "ts": "src/main.ts",
+            "candid": "src/main.did",
+            "wasm": "target/wasm32-unknown-unknown/release/blog.wasm",
+            "declarations": {
+                "output": "test/dfx_generated/blog"
+            }
+        }
+    }
+}

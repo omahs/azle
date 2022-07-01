@@ -1,0 +1,17 @@
+type BlogPost = record {
+    "title": text;
+    "body": text;
+    "author": text;
+    "publish_date": nat;
+    "last_modified": nat;
+};
+
+service: {
+    "getBlogPosts": () -> (vec BlogPost) query;
+    "listPosts": () -> (text) query;
+    "readPost": (nat32) -> (BlogPost) query;
+    "getPostCount": () -> (nat32) query;
+    "createPost": (text, text, text) -> (BlogPost);
+    "updatePost": (nat32, text) -> (BlogPost);
+    "deletePost": (nat32) -> ();
+}
