@@ -21,35 +21,42 @@ type BlogPost = {
     last_modified: nat;
 };
 
-let posts: {[key: string]: BlogPost} = {};
+let posts: { [key: string]: BlogPost } = {};
 
-export function get_blog_posts(): Query<{[key: string]: BlogPost}> {
-    return posts;
+export function get_blog_posts(): Query<BlogPost[]> {
+    return Object.values(posts);
 }
 
-export function list_posts(): Query<string> {
-    return posts
-        .map((obj, index) => {
-            return `${index} ${obj.title}`;
-        })
-        .join('\n');
+export function get_blog_post_keys(): Query<string[]> {
+    return Object.keys(posts);
 }
+
+// export function list_posts(): Query<string> {
+//     return posts
+//         .map((obj, index) => {
+//             return `${index} ${obj.title}`;
+//         })
+//         .join('\n');
+// }
 
 export function create_post(
     title: string,
     author: string,
     post: string
 ): Update<BlogPost> {
-    const currentTime = ic.time();
-    const blogPost: BlogPost = {
+    const current_time = ic.time();
+    const blog_post: BlogPost = {
         title: title,
         body: post,
         author: author,
-        publish_date: currentTime,
-        last_modified: currentTime
+        publish_date: current_time,
+        last_modified: current_time
     };
-    posts = [...posts, blogPost];
-    return blogPost;
+    const post_id = generate_id();
+    console.log('This is the stuff');
+    // posts = { ...posts, post_id: blog_post };
+    posts[post_id.toString()] = blog_post;
+    return blog_post;
 }
 
 export function read_post(number: nat32): Query<BlogPost> {
@@ -57,31 +64,35 @@ export function read_post(number: nat32): Query<BlogPost> {
 }
 
 export function update_post(
-    number: nat32,
+    postID: string,
     updatedBody: string
 ): Update<BlogPost> {
-    const updatedPost: BlogPost = {
-        ...posts[number],
+    const updated_post: BlogPost = {
+        ...posts[postID],
         body: updatedBody,
         last_modified: ic.time()
     };
-    posts = posts.map((value: BlogPost, index: nat32) => {
-        if (index === number) {
-            return updatedPost;
-        }
-        return value;
-    });
-    return updatedPost;
+    // TODO this feels mutaty to me...
+    posts[postID] = updated_post;
+    // posts = posts.map((value: BlogPost, index: nat32) => {
+    //     if (index === postID) {
+    //         return updated_post;
+    //     }
+    //     return value;
+    // });
+    return updated_post;
 }
 
-export function delete_post(number: nat32): Update<void> {
-    posts = posts.filter((value: BlogPost, index: number) => {
-        return index !== number;
-    });
+export function delete_post(postID: string): Update<void> {
+    // TODO this feels mutaty to me...
+    delete posts[postID];
+    // posts = posts.filter((value: BlogPost, index: number) => {
+    //     return index !== postID;
+    // });
 }
 
 export function get_post_count(): Query<nat32> {
-    return posts.length;
+    return Object.keys(posts).length;
 }
 
 export function* generate_id(): Update<string> {
@@ -89,7 +100,11 @@ export function* generate_id(): Update<string> {
         yield ManagementCanister.raw_rand();
 
     if (!ok(randomness_canister_result)) {
-        return randomness_canister_result.err === undefined ? 'undefined' : randomness_canister_result.err;
+        return randomness_canister_result.err === undefined
+            ? 'undefined'
+            : randomness_canister_result.err;
     }
-    return sha224().update(Array.from(randomness_canister_result.ok)).digest('hex');
+    return sha224()
+        .update(Array.from(randomness_canister_result.ok))
+        .digest('hex');
 }
