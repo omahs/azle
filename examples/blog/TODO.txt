@@ -1,0 +1,12 @@
+Get a random number identifier for each post
+
+raw rand in managerment canister (look for examples)
+
+Look at multisig vault for identifier (a simple hash might be suffcient)
+
+use consts
+
+
+
+DON'T FORGET
+If you make a cross canister call you have to make it an update. I guess it's becuase who knows what that other canister is going to do?
