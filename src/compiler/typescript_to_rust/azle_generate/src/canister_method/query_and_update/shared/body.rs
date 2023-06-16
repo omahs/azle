@@ -1,62 +1,31 @@
-use cdk_framework::traits::CollectResults;
-use quote::quote;
+use quote::{format_ident, quote};
 use swc_ecma_ast::{
     TsKeywordTypeKind::{TsNullKeyword, TsVoidKeyword},
     TsType,
 };
 
-use crate::{
-    canister_method::{rust, AnnotatedFnDecl},
-    ts_ast::SourceMapped,
-    Error,
-};
+use crate::{canister_method::AnnotatedFnDecl, ts_ast::SourceMapped, Error};
 
 pub fn generate(
     fn_decl: &SourceMapped<AnnotatedFnDecl>,
 ) -> Result<proc_macro2::TokenStream, Vec<Error>> {
-    let (call_to_js_function, return_expression, manual) = (
-        rust::generate_call_to_js_function(fn_decl),
-        generate_return_expression(fn_decl).map_err(Error::into),
-        fn_decl.is_manual().map_err(Error::into),
-    )
-        .collect_results()?;
-
     let function_name = fn_decl.get_function_name();
+
+    let param_name_idents: Vec<proc_macro2::Ident> = fn_decl
+        .build_params()?
+        .iter()
+        .map(|param| format_ident!("{}", param.get_prefixed_name()))
+        .collect();
+
+    let return_expression = generate_return_expression(fn_decl).map_err(|err| vec![err])?;
 
     Ok(quote! {
         BOA_CONTEXT_REF_CELL.with(|box_context_ref_cell| {
             let mut boa_context = box_context_ref_cell.borrow_mut();
-
-            let uuid = uuid::Uuid::new_v4().to_string();
-
-            UUID_REF_CELL.with(|uuid_ref_cell| {
-                let mut uuid_mut = uuid_ref_cell.borrow_mut();
-
-                *uuid_mut = uuid.clone();
-            });
-
-            METHOD_NAME_REF_CELL.with(|method_name_ref_cell| {
-                let mut method_name_mut = method_name_ref_cell.borrow_mut();
-
-                *method_name_mut = #function_name.to_string()
-            });
-
-            MANUAL_REF_CELL.with(|manual_ref_cell| {
-                let mut manual_mut = manual_ref_cell.borrow_mut();
-
-                *manual_mut = #manual;
-            });
-
-            #call_to_js_function
-
-            let final_return_value = async_await_result_handler(
-                &mut boa_context,
-                &boa_return_value,
-                &uuid,
-                #function_name,
-                #manual
-            );
-
+            let params = vec![
+                #(#param_name_idents.try_into_vm_value(&mut boa_context).unwrap()),*
+            ];
+            let final_return_value = call_global_js_function(#function_name, &params);
             #return_expression
         })
     })

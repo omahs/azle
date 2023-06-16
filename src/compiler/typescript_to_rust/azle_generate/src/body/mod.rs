@@ -23,6 +23,7 @@ mod ic_object;
 pub mod async_await_result_handler;
 pub mod boa_error_handlers;
 pub mod stable_b_tree_map;
+pub mod utils;
 
 pub fn generate(
     ts_ast: &TsAst,
@@ -56,6 +57,7 @@ pub fn generate(
     );
 
     let stable_b_tree_maps = stable_b_tree_map::rust::generate(&stable_b_tree_map_nodes);
+    let utils = utils::generate();
 
     let plugins_code = plugins
         .iter()
@@ -87,6 +89,7 @@ pub fn generate(
         #ic_object_functions
         #register_ic_object_function
         #stable_b_tree_maps
+        #utils
         #(#plugins_code)*
 
         // TODO this is temporary until this issue is resolved: https://github.com/demergent-labs/azle/issues/1029
