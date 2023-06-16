@@ -23,7 +23,7 @@ pub fn generate(
         BOA_CONTEXT_REF_CELL.with(|box_context_ref_cell| {
             let mut boa_context = box_context_ref_cell.borrow_mut();
             let params = vec![
-                #(#param_name_idents.try_into_vm_value(&mut boa_context).unwrap()),*
+                #(#param_name_idents),*
             ];
             let final_return_value = call_global_js_function(#function_name, &params);
             #return_expression
