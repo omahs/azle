@@ -1,3 +1,16 @@
+globalThis.TextDecoder = require('text-encoding').TextDecoder;
+globalThis.TextEncoder = require('text-encoding').TextEncoder;
+
+globalThis._azleCandidInitParams = [];
+globalThis._azleCandidMethods = [];
+
+globalThis.console = {
+    ...globalThis.console,
+    log: (...args) => {
+        ic.print(...args);
+    }
+};
+
 import { IDL } from '@dfinity/candid';
 
 export class Record {
@@ -59,6 +72,12 @@ export class Record {
 
 export function query(paramsIdls, returnIdl) {
     return (target, key, descriptor) => {
+        globalThis._azleCandidMethods.push(
+            `${key}: (${paramsIdls
+                .map((paramIdl) => paramIdl.display())
+                .join(', ')}) -> (${returnIdl.display()}) query;`
+        );
+
         const originalMethod = descriptor.value;
 
         descriptor.value = function (...args) {

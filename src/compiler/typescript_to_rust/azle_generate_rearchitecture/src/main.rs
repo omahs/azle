@@ -115,6 +115,11 @@ fn main() -> Result<(), String> {
             execute_js("echoRecord");
         }
 
+        #[ic_cdk_macros::query(manual_reply = true)]
+        fn candid() {
+            execute_js("candid");
+        }
+
         fn execute_js(function_name: &str) {
             CONTEXT.with(|context| {
                 let mut context = context.borrow_mut();

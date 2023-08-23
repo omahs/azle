@@ -1,9 +1,6 @@
 import { IDL } from '@dfinity/candid';
 import { Record, int, nat32, text, bool, query } from 'azle';
 
-globalThis.TextDecoder = require('text-encoding').TextDecoder;
-globalThis.TextEncoder = require('text-encoding').TextEncoder;
-
 class MyRecord extends Record {
     @int
     myInt: bigint;
@@ -27,6 +24,7 @@ export default class {
     test(param1: string, param2: string): string {
         return param1 + param2;
     }
+
     @query([IDL.Text, IDL.Text], IDL.Text)
     simpleQuery(param1: string, param2: string): string {
         return param1 + param2;
@@ -35,6 +33,16 @@ export default class {
     @query([MyRecord.getIDL()], MyRecord.getIDL())
     echoRecord(record: MyRecord): MyRecord {
         return record;
+    }
+
+    @query([IDL.Nat], IDL.Text)
+    convert(nat: bigint): string {
+        return nat.toString();
+    }
+
+    @query([], IDL.Text)
+    candid(): string {
+        return globalThis._azleCandidService;
     }
 }
 
