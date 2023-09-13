@@ -46,6 +46,37 @@ export abstract class Record {
     ): InstanceType<T> {
         return new this(props) as InstanceType<T>;
     }
+
+    static convertCandidJsToAzleJs<T extends Constructor>(
+        this: T,
+        candidJs: T
+    ) {
+        let result = Object.entries(this._azleCandidMap).map(
+            ([name, idlLike]) => {
+                if (
+                    'convertCandidJsToAzleJs' in idlLike &&
+                    typeof idlLike.convertCandidJsToAzleJs === 'function'
+                ) {
+                    return idlLike.convertCandidJsToAzleJs(candidJs[name]);
+                }
+                return candidJs[name];
+            }
+        );
+        // TODO use result to make an azle ready version of this record
+        return new this(candidJs) as InstanceType<T>;
+    }
+
+    convertAzleJsToCandidJs(): Record {
+        // TODO implement this
+        // Basically what we want to do is go though all of the members and see
+        // if they need to be converted. I haven't figured out how to make it be
+        // a record again... maybe just make an object literal with all of the
+        // right names and types... I'm not sure
+        // But the only thing that should be different right now is Services
+        // which should be principals. Everything else only needs to undergo
+        // this if it might have a service inside of it
+        return this;
+    }
 }
 
 type Constructor<T = {}> = new (...args: any[]) => T;

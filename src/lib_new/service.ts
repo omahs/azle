@@ -78,6 +78,17 @@ export abstract class Service {
 
         return IDL.Service(record);
     }
+
+    static convertCandidJsToAzleJs<T extends Constructor>(
+        this: T,
+        candidJs: Principal
+    ) {
+        return new this(candidJs) as InstanceType<T>;
+    }
+
+    convertAzleJsToCandidJs(): Principal {
+        return this.canisterId;
+    }
 }
 
 export function serviceDecorator(

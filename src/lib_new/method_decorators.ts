@@ -1,5 +1,5 @@
 import { ic } from './ic';
-import { IDL } from './index';
+import { IDL, Principal } from './index';
 
 import {
     CandidClass,
@@ -109,6 +109,7 @@ export function query(
     return (target: any, key: string, descriptor?: PropertyDescriptor) => {
         if (descriptor === undefined) {
             serviceDecorator(target, key, paramsIdls, returnIdl);
+            // TODO: We need to call addIDLforMethodtoServiceConstructor
         } else {
             return setupCanisterMethod(
                 target,
@@ -268,9 +269,57 @@ function setupCanisterMethod(
             return;
         }
 
-        const decoded = IDL.decode(paramCandid[0], args[0]);
+        // TODO: Recursively convert principals (that should be services) into services.
 
-        const result = originalMethod.apply(this, decoded);
+        paramCandid[0].forEach((candid) => console.log(candid.display()));
+
+        // Keep in mind each thing in paramCandid[0] is a regular javascript type
+        // So we can just make a function on the ParamIDL thing that takes that javascript value and does the thing with it
+        // Go though each param
+        // if its a record
+        //     go though each member and do this check
+        // if its a variant
+        //     go though each member and do this check
+        // if it's a tuple
+        //     go though each member and do this check
+        // if it's an opt
+        //     go though each member and do this check
+        // etc
+        //     go though each member and do this check
+        // if it's a service
+        //     Get the service constructor
+        const decoded = IDL.decode(paramCandid[0], args[0]);
+        // TODO when this is ready to go just use this instead of decoded
+        // Then do a similar thing on the way out
+        let newDecoded = paramsIdls.map((candid, index) => {
+            if (
+                'convertCandidJsToAzleJs' in candid &&
+                typeof candid.convertCandidJsToAzleJs === 'function'
+            ) {
+                return candid.convertCandidJsToAzleJs(decoded[index]);
+            }
+            return candid;
+        });
+
+        const firstDecoded = decoded[0];
+
+        const theirServiceClass = paramsIdls[0];
+
+        const serviceFixedFirstItem =
+            firstDecoded instanceof Principal
+                ? new theirServiceClass(firstDecoded)
+                : firstDecoded;
+
+        const serviceFixedDecoded = [serviceFixedFirstItem];
+
+        // loop through the param IDLs
+        // see if any of those are children of service
+
+        // Recursively go through the decoded stuff and wrap any services in `new ThatServiceType()`
+
+        console.log(`About to call method with: ${serviceFixedDecoded}`);
+
+        const result = originalMethod.apply(this, serviceFixedDecoded);
 
         if (
             mode === 'init' ||
@@ -280,11 +329,12 @@ function setupCanisterMethod(
             return;
         }
 
-        if (
+        const is_promise =
             result !== undefined &&
             result !== null &&
-            typeof result.then === 'function'
-        ) {
+            typeof result.then === 'function';
+
+        if (is_promise) {
             result
                 .then((result) => {
                     const encodeReadyResult =
@@ -309,7 +359,12 @@ function setupCanisterMethod(
                     ic.trap(error.toString());
                 });
         } else {
-            const encodeReadyResult = result === undefined ? [] : [result];
+            // TODO: Recursively convert services to principals
+            const serviceFixedResult =
+                result instanceof Service ? result.canisterId : result;
+
+            const encodeReadyResult =
+                result === undefined ? [] : [serviceFixedResult];
 
             if (!manual) {
                 const encoded = IDL.encode(returnCandid[0], encodeReadyResult);
