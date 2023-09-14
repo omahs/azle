@@ -1,5 +1,5 @@
 import { IDL } from './index';
-import { Parent, processMap } from './utils';
+import { CandidClass, Parent, processMap } from './utils';
 
 // Without this default constructor we get errors when initializing variants and
 // records. While the decorators are able to add constructors they are not
@@ -51,19 +51,23 @@ export abstract class Record {
         this: T,
         candidJs: T
     ) {
-        let result = Object.entries(this._azleCandidMap).map(
-            ([name, idlLike]) => {
+        let result = Object.entries(this._azleCandidMap).reduce(
+            (acc, [name, idlLike]) => {
                 if (
                     'convertCandidJsToAzleJs' in idlLike &&
                     typeof idlLike.convertCandidJsToAzleJs === 'function'
                 ) {
                     return idlLike.convertCandidJsToAzleJs(candidJs[name]);
                 }
-                return candidJs[name];
-            }
+                return {
+                    ...acc,
+                    [name]: candidJs[name]
+                };
+            },
+            {}
         );
         // TODO use result to make an azle ready version of this record
-        return new this(candidJs) as InstanceType<T>;
+        return new this(result) as InstanceType<T>;
     }
 
     convertAzleJsToCandidJs(): Record {
