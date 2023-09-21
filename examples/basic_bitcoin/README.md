@@ -31,7 +31,7 @@ rm -rf bitcoin.tar.gz
 dfx start --clean --host 127.0.0.1:8000 --enable-bitcoin
 ```
 
-## basic_bitcion
+## basic_bitcoin
 
 ```bash
 dfx deploy --argument='(variant { Regtest })'
